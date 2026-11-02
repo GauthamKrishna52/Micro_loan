@@ -43,4 +43,14 @@ public interface ConnectionRequestRepository extends JpaRepository<ConnectionReq
     Optional<ConnectionRequest> findBetweenUsersWithStatus(@Param("firstId") UUID firstId,
                                                            @Param("secondId") UUID secondId,
                                                            @Param("status") Status status);
+
+    @Query(value = "WITH RECURSIVE network(user_id) AS (" +
+            "SELECT CAST(:userId AS UUID) " +
+            "UNION " +
+            "SELECT CASE WHEN c.requester_id = n.user_id THEN c.recipient_id ELSE c.requester_id END " +
+            "FROM connection_request c JOIN network n " +
+            "ON c.requester_id = n.user_id OR c.recipient_id = n.user_id " +
+            "WHERE c.status = 'ACCEPTED'" +
+            ") SELECT user_id FROM network", nativeQuery = true)
+    List<UUID> findConnectedUserIds(@Param("userId") UUID userId);
 }
