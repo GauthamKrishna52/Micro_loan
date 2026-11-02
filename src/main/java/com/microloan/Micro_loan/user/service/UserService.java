@@ -4,6 +4,9 @@ import com.microloan.Micro_loan.user.entity.User;
 import com.microloan.Micro_loan.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import java.util.Collections;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,6 +33,24 @@ public class UserService implements UserDetailsService {
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    public User getProfile(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    public User updateProfile(String email, String name) {
+        User user = getProfile(email);
+        if (!user.getName().equals(name)) {
+            user.setName(name);
+            return userRepository.save(user);
+        }
+        return user;
+    }
+
+    public List<User> search(String query, String currentEmail) {
+        return userRepository.findTop20ByNameContainingIgnoreCaseAndEmailNotOrderByNameAsc(query, currentEmail);
     }
 
     @Override
