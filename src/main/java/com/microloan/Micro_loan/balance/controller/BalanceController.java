@@ -1,7 +1,7 @@
-package com.microloan.Micro_loan.transaction.controller;
+package com.microloan.Micro_loan.balance.controller;
 
-import com.microloan.Micro_loan.transaction.dto.BalanceResponse;
-import com.microloan.Micro_loan.transaction.service.NetworkBalanceService;
+import com.microloan.Micro_loan.balance.dto.BalanceResponse;
+import com.microloan.Micro_loan.balance.service.BalanceSnapshotService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,17 +13,17 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/balances")
 public class BalanceController {
 
-    private final NetworkBalanceService balanceService;
+    private final BalanceSnapshotService balanceSnapshotService;
 
-    public BalanceController(NetworkBalanceService balanceService) {
-        this.balanceService = balanceService;
+    public BalanceController(BalanceSnapshotService balanceSnapshotService) {
+        this.balanceSnapshotService = balanceSnapshotService;
     }
 
     @GetMapping
-    public BalanceResponse getNetworkBalances(Authentication authentication) {
+    public BalanceResponse getBalance(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        return balanceService.calculate(authentication.getName());
+        return balanceSnapshotService.getBalance(authentication.getName());
     }
 }

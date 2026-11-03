@@ -4,6 +4,7 @@ import com.microloan.Micro_loan.connection.entity.ConnectionRequest;
 import com.microloan.Micro_loan.connection.entity.ConnectionRequest.Status;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -53,4 +54,9 @@ public interface ConnectionRequestRepository extends JpaRepository<ConnectionReq
             "WHERE c.status = 'ACCEPTED'" +
             ") SELECT user_id FROM network", nativeQuery = true)
     List<UUID> findConnectedUserIds(@Param("userId") UUID userId);
+
+    @Query("select r from ConnectionRequest r join fetch r.requester join fetch r.recipient " +
+            "where r.status = :status and r.requester.id in :userIds and r.recipient.id in :userIds")
+    List<ConnectionRequest> findConnectionsWithinNetwork(@Param("userIds") Set<UUID> userIds,
+                                                         @Param("status") Status status);
 }

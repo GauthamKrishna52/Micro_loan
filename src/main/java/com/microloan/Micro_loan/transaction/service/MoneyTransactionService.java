@@ -1,5 +1,6 @@
 package com.microloan.Micro_loan.transaction.service;
 
+import com.microloan.Micro_loan.balance.service.BalanceSnapshotService;
 import com.microloan.Micro_loan.connection.entity.ConnectionRequest.Status;
 import com.microloan.Micro_loan.connection.repository.ConnectionRequestRepository;
 import com.microloan.Micro_loan.transaction.entity.MoneyTransaction;
@@ -23,13 +24,16 @@ public class MoneyTransactionService {
     private final MoneyTransactionRepository transactionRepository;
     private final ConnectionRequestRepository connectionRepository;
     private final UserRepository userRepository;
+    private final BalanceSnapshotService balanceSnapshotService;
 
     public MoneyTransactionService(MoneyTransactionRepository transactionRepository,
                                    ConnectionRequestRepository connectionRepository,
-                                   UserRepository userRepository) {
+                                   UserRepository userRepository,
+                                   BalanceSnapshotService balanceSnapshotService) {
         this.transactionRepository = transactionRepository;
         this.connectionRepository = connectionRepository;
         this.userRepository = userRepository;
+        this.balanceSnapshotService = balanceSnapshotService;
     }
 
     public MoneyTransaction requestMoney(String recipientEmail, String payerEmail, BigDecimal amount,
@@ -96,7 +100,12 @@ public class MoneyTransactionService {
         requireParticipantEmail(transaction.getRecipient(), email, "Only the recipient can confirm receipt");
         requireStatus(transaction, MoneyTransaction.Status.REPORTED_PAID);
         transaction.setStatus(MoneyTransaction.Status.CONFIRMED);
-        return transactionRepository.save(transaction);
+        MoneyTransaction confirmed = transactionRepository.save(transaction);
+        if (confirmed.getVisibility() == Visibility.SHARED) {
+            transactionRepository.flush();
+            balanceSnapshotService.refreshForUser(confirmed.getPayer().getId());
+        }
+        return confirmed;
     }
 
     public MoneyTransaction dispute(String email, UUID transactionId) {
